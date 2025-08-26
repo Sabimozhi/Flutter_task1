@@ -24,7 +24,7 @@ class FruitsCardWidget extends StatelessWidget {
                     icon: Icon(Icons.remove, size: 16),
                   ),
                   Text(
-                    fruit.quantity.toString(),
+                    fruit.quantity,
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
 

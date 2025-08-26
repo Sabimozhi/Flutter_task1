@@ -4,14 +4,9 @@ import 'package:task1/providers/fruit_list_provider.dart';
 import 'package:task1/screens/delete.dart';
 import 'package:task1/screens/fruits_card.dart';
 
-class SearchWidget extends StatefulWidget {
-  const SearchWidget({super.key});
+class SearchWidget extends StatelessWidget {
+  SearchWidget({super.key});
 
-  @override
-  State<SearchWidget> createState() => _SearchWidgetState();
-}
-
-class _SearchWidgetState extends State<SearchWidget> {
   final searchController = SearchController();
 
   @override
@@ -37,7 +32,7 @@ class _SearchWidgetState extends State<SearchWidget> {
                 .where(
                   (fruit) =>
                       fruit.name.toLowerCase().contains(query) ||
-                      fruit.quantity.toString().contains(query),
+                      fruit.quantity.contains(query),
                 )
                 .toList();
             return results.map((fruit) {

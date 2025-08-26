@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:task1/fruits.dart';
+import 'package:task1/providers/fruit_list_provider.dart';
 
 class AddFruitWidget extends StatefulWidget {
   const AddFruitWidget({super.key});
@@ -17,13 +19,16 @@ class _AddFruitWidgetState extends State<AddFruitWidget> {
   void _onSave() {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
-      Navigator.of(context).pop(
-        Fruits(
-          name: _fruitName,
-          quantity: _quantity,
-          description: _description,
-        ),
+      final newFruit = Fruits(
+        name: _fruitName,
+        quantity: _quantity,
+        description: _description,
       );
+      Provider.of<FruitsListProvider>(
+        context,
+        listen: false,
+      ).addFruit(newFruit);
+      Navigator.of(context).pop();
     }
   }
 

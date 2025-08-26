@@ -8,25 +8,20 @@ class FruitsListProvider extends ChangeNotifier {
     Fruits(name: 'Orange', quantity: '8', description: 'Citrus and juicy'),
     Fruits(name: 'Mango', quantity: '6', description: 'Tropical and sweet'),
     Fruits(name: 'Pineapple', quantity: '3', description: 'Tropical and tangy'),
-    Fruits(
-      name: 'Watermelon',
-      quantity: '2',
-      description: 'Green outside, red inside',
-    ),
     Fruits(name: 'Papaya', quantity: '4', description: 'Orange and soft'),
-    Fruits(
-      name: 'Strawberry',
-      quantity: '15',
-      description: 'Small, red, juicy',
-    ),
     Fruits(name: 'Guava', quantity: '7', description: 'Green and crunchy'),
     Fruits(name: 'Pear', quantity: '5', description: 'Green and sweet'),
   ];
+
+  FruitsListProvider() {
+    _fruits.sort((a, b) => a.name.compareTo(b.name));
+  }
 
   List<Fruits> get fruits => _fruits;
 
   void addFruit(Fruits fruit) {
     _fruits.add(fruit);
+    _fruits.sort((a, b) => a.name.compareTo(b.name));
     notifyListeners();
   }
 

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:task1/fruits.dart';
 import 'package:task1/providers/fruit_list_provider.dart';
 import 'package:task1/screens/delete.dart';
 import 'package:task1/screens/fruits_card.dart';
@@ -41,12 +40,8 @@ class FruitsListWidget extends StatelessWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final newFruit = await Navigator.of(context).pushNamed('/addFruits');
-
-          if (newFruit != null && newFruit is Fruits) {
-            fruitsProvider.addFruit(newFruit);
-          }
+        onPressed: () {
+          Navigator.of(context).pushNamed('/addFruits');
         },
         child: Icon(Icons.add),
       ),

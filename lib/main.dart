@@ -6,10 +6,8 @@ import 'package:task1/screens/fruits_list.dart';
 
 void main() {
   runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (context) => FruitsListProvider()),
-      ],
+    ChangeNotifierProvider(
+      create: (context) => FruitsListProvider(),
       child: const MyApp(),
     ),
   );
