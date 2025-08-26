@@ -21,35 +21,43 @@ class SearchWidget extends StatelessWidget {
           },
         );
       },
-      suggestionsBuilder:
-          (BuildContext context, SearchController searchController) {
-            final fruitsProvider = Provider.of<FruitsListProvider>(
-              context,
-              listen: false,
-            );
-            final query = searchController.text.toLowerCase();
-            final results = fruitsProvider.fruits
-                .where(
-                  (fruit) =>
-                      fruit.name.toLowerCase().contains(query) ||
-                      fruit.quantity.contains(query),
-                )
-                .toList();
-            return results.map((fruit) {
-              return GestureDetector(
-                onLongPress: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) {
-                      return DeleteWidget(fruit);
-                    },
-                  );
-                },
+      suggestionsBuilder: (
+        BuildContext context,
+        SearchController searchController,
+      ) {
+        return [
+          Consumer<FruitsListProvider>(
+            builder: (context, fruitsProvider, child) {
+              final query = searchController.text.toLowerCase();
+              final results =
+                  fruitsProvider.fruits
+                      .where(
+                        (fruit) =>
+                            fruit.name.toLowerCase().contains(query) ||
+                            fruit.quantity.contains(query),
+                      )
+                      .toList();
 
-                child: FruitsCardWidget(fruit),
+              return Column(
+                children:
+                    results.map((fruit) {
+                      return GestureDetector(
+                        onLongPress: () {
+                          showDialog(
+                            context: context,
+                            builder: (dialogContext) {
+                              return DeleteWidget(fruit);
+                            },
+                          );
+                        },
+                        child: FruitsCardWidget(fruit),
+                      );
+                    }).toList(),
               );
-            });
-          },
+            },
+          ),
+        ];
+      },
     );
   }
 }
