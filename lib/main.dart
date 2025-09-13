@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:task1/providers/fruit_list_provider.dart';
 import 'package:task1/screens/add_fruit.dart';
-import 'package:task1/screens/fruits_list.dart';
+import 'package:task1/travel_request/booking_provider.dart';
+import 'package:task1/travel_request/travel_request.dart';
 
 void main() {
   runApp(
@@ -18,13 +19,16 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+    return ChangeNotifierProvider(
+      create: (context) => BookingProvider(),
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        ),
+        routes: {'/addFruits': (context) => AddFruitWidget()},
+        home: MainScreen(),
       ),
-      routes: {'/addFruits': (context) => AddFruitWidget()},
-      home: const FruitsListWidget(),
     );
   }
 }
