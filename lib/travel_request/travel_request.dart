@@ -1,11 +1,11 @@
-// main_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:task1/travel_request/add_person_dialog.dart';
 import 'booking_provider.dart';
 import 'models.dart';
 import 'vendor_selection_screen.dart';
 import 'price_drawer.dart';
+import 'bulk_price_drawer.dart';
+import 'add_person_dialog.dart';
 
 class MainScreen extends StatelessWidget {
   @override
@@ -25,36 +25,33 @@ class MainScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Top Row with Toggle and Button
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Toggle Switch
                     _buildToggleSwitch(provider),
-
-                    // Select & Assign Vendor Button
-                    ElevatedButton.icon(
+                    OutlinedButton.icon(
                       onPressed: () => _assignVendors(context, provider),
                       icon: Icon(Icons.assignment_add),
                       label: Text('Select & Assign Vendor'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        foregroundColor: Colors.white,
+                      style: OutlinedButton.styleFrom(
+                        // backgroundColor: Colors.blue,
+                        foregroundColor: Colors.blue.shade700,
                         padding: EdgeInsets.symmetric(
                           horizontal: 20,
-                          vertical: 12,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          vertical: 16,
                         ),
                       ),
                     ),
                   ],
                 ),
                 SizedBox(height: 20),
-
-                // Main Table
-                Expanded(child: _buildMainTable(context, provider)),
+                _buildTabBar(provider),
+                SizedBox(height: 20),
+                Expanded(
+                  child: provider.currentTabIndex == 0
+                      ? _buildUserTable(context, provider)
+                      : _buildVendorTable(context, provider),
+                ),
               ],
             ),
           ),
@@ -62,49 +59,9 @@ class MainScreen extends StatelessWidget {
             onPressed: () => _showAddPersonDialog(context, provider),
             icon: Icon(Icons.person_add),
             label: Text('Add Person'),
-            backgroundColor: Colors.blue,
-            foregroundColor: Colors.white,
           ),
         );
       },
-    );
-  }
-
-  void _showAddPersonDialog(BuildContext context, BookingProvider provider) {
-    showDialog(
-      context: context,
-      builder: (context) => AddPersonDialog(
-        isOneWay: provider.isOneWay,
-        onAddPerson:
-            (
-              personName,
-              fromLocation,
-              toLocation,
-              flightName,
-              flightClass,
-              dateTime,
-            ) {
-              provider.addNewPerson(
-                personName: personName,
-                fromLocation: fromLocation,
-                toLocation: toLocation,
-                flightName: flightName,
-                flightClass: flightClass,
-                dateTime: dateTime,
-              );
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    provider.isOneWay
-                        ? 'New person added successfully!'
-                        : 'New person added with round-trip requests!',
-                  ),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            },
-      ),
     );
   }
 
@@ -129,7 +86,6 @@ class MainScreen extends StatelessWidget {
                 'One Way',
                 style: TextStyle(
                   color: provider.isOneWay ? Colors.white : Colors.grey[700],
-                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
@@ -146,7 +102,6 @@ class MainScreen extends StatelessWidget {
                 'Round Trip',
                 style: TextStyle(
                   color: !provider.isOneWay ? Colors.white : Colors.grey[700],
-                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
@@ -156,26 +111,109 @@ class MainScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMainTable(BuildContext context, BookingProvider provider) {
+  Widget _buildTabBar(BookingProvider provider) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey[200],
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          GestureDetector(
+            onTap: () => provider.setTabIndex(0),
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              decoration: BoxDecoration(
+                color: provider.currentTabIndex == 0
+                    ? Colors.blue
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                'Group by Users',
+                style: TextStyle(
+                  color: provider.currentTabIndex == 0
+                      ? Colors.white
+                      : Colors.grey[700],
+                ),
+              ),
+            ),
+          ),
+          GestureDetector(
+            onTap: () => provider.setTabIndex(1),
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              decoration: BoxDecoration(
+                color: provider.currentTabIndex == 1
+                    ? Colors.blue
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                'Group by Vendors',
+                style: TextStyle(
+                  color: provider.currentTabIndex == 1
+                      ? Colors.white
+                      : Colors.grey[700],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // GROUP BY USERS TABLE
+  Widget _buildUserTable(BuildContext context, BookingProvider provider) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 3,
-            offset: Offset(0, 1),
-          ),
-        ],
       ),
       child: Column(
         children: [
-          // Table Header
-          _buildTableHeader(),
-
-          // Table Body
+          Container(
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(8),
+                topRight: Radius.circular(8),
+              ),
+            ),
+            child: Row(
+              children: [
+                SizedBox(width: 40), // Checkbox
+                SizedBox(width: 40), // Expand
+                Expanded(
+                  child: Text(
+                    'Name',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    'Travel Path',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    'Flight',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    'Status',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+          ),
           Expanded(
             child: ListView.builder(
               itemCount: provider.currentRequests.length,
@@ -185,12 +223,224 @@ class MainScreen extends StatelessWidget {
 
                 return Column(
                   children: [
-                    // Main Row
-                    _buildMainRow(context, provider, request),
+                    // MAIN USER ROW
+                    Container(
+                      padding: EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(color: Colors.grey[300]!),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: 40,
+                            child: Checkbox(
+                              value: provider.selectedRequests.contains(
+                                request.id,
+                              ),
+                              onChanged: (value) =>
+                                  provider.toggleRequestSelection(request.id),
+                            ),
+                          ),
+                          SizedBox(
+                            width: 40,
+                            child: IconButton(
+                              icon: Icon(
+                                isExpanded ? Icons.remove : Icons.add,
+                                color: Colors.blue,
+                              ),
+                              onPressed: () {
+                                print(
+                                  'User expand clicked for request ${request.id}, current state: $isExpanded',
+                                );
+                                provider.toggleRowExpansion(request.id);
+                              },
+                            ),
+                          ),
+                          Expanded(child: Text(request.personName)),
+                          Expanded(child: Text(request.travelPath)),
+                          Expanded(child: Text(request.flightName)),
+                          Expanded(child: Text(request.status)),
+                        ],
+                      ),
+                    ),
 
-                    // Expanded Vendor Table
-                    if (isExpanded && request.vendors.isNotEmpty)
-                      _buildVendorSubTable(context, provider, request),
+                    // VENDOR SUB-TABLE (Shows when expanded)
+                    if (isExpanded)
+                      Container(
+                        margin: EdgeInsets.only(left: 80),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[50],
+                          border: Border(
+                            bottom: BorderSide(color: Colors.grey[300]!),
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            Container(
+                              padding: EdgeInsets.all(8),
+                              decoration: BoxDecoration(color: Colors.blue[50]),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      'S.No',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Text(
+                                      'Company',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Text(
+                                      'City',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Text(
+                                      'Price',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Text(
+                                      'Status',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Text(
+                                      'Actions',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (request.vendors.isEmpty)
+                              Container(
+                                padding: EdgeInsets.all(20),
+                                child: Text(
+                                  'No vendors assigned. Use "Select & Assign Vendor" to add vendors.',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 12,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              )
+                            else
+                              ...request.vendors.asMap().entries.map((entry) {
+                                int sNo = entry.key + 1;
+                                AssignedVendor vendor = entry.value;
+                                return Container(
+                                  padding: EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    border: Border(
+                                      bottom: BorderSide(
+                                        color: Colors.grey[300]!,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          '$sNo',
+                                          style: TextStyle(fontSize: 12),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Text(
+                                          vendor.companyName,
+                                          style: TextStyle(fontSize: 12),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Text(
+                                          vendor.city,
+                                          style: TextStyle(fontSize: 12),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Text(
+                                          vendor.price.isEmpty
+                                              ? '-'
+                                              : vendor.price,
+                                          style: TextStyle(fontSize: 12),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Container(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 4,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: vendor.isAwarded
+                                                ? Colors.green[100]
+                                                : Colors.orange[100],
+                                            borderRadius: BorderRadius.circular(
+                                              4,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            vendor.isAwarded
+                                                ? 'Awarded'
+                                                : 'Pending',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: vendor.isAwarded
+                                                  ? Colors.green[800]
+                                                  : Colors.orange[800],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: IconButton(
+                                          icon: Icon(
+                                            Icons.edit,
+                                            size: 16,
+                                            color: Colors.blue,
+                                          ),
+                                          onPressed: () => _openPriceDrawer(
+                                            context,
+                                            vendor,
+                                            request.id,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                          ],
+                        ),
+                      ),
                   ],
                 );
               },
@@ -201,430 +451,317 @@ class MainScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTableHeader() {
-    return Container(
-      padding: EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(8),
-          topRight: Radius.circular(8),
+  // GROUP BY VENDORS TABLE
+  Widget _buildVendorTable(BuildContext context, BookingProvider provider) {
+    final vendorGroups = provider.getVendorGroups();
+
+    if (vendorGroups.isEmpty) {
+      return Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
         ),
-      ),
-      child: Row(
-        children: [
-          SizedBox(width: 40), // Checkbox
-          SizedBox(width: 40), // Expand icon
-          Expanded(
-            flex: 2,
-            child: Text('Name', style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-          Expanded(
-            flex: 3,
-            child: Text(
-              'Travel Path',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              'Date & Time',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              'Flight Name',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-          Expanded(
-            flex: 1,
-            child: Text('Class', style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-          Expanded(
-            flex: 1,
-            child: Text(
-              'Status',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              'Vendor Selected',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              'Contract Status',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMainRow(
-    BuildContext context,
-    BookingProvider provider,
-    BookingRequest request,
-  ) {
-    final isExpanded = provider.expandedRows[request.id] ?? false;
+        child: Center(child: Text('No vendors assigned yet')),
+      );
+    }
 
     return Container(
-      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
-        color: provider.selectedRequests.contains(request.id)
-            ? Colors.blue[50]
-            : Colors.white,
-      ),
-      child: Row(
-        children: [
-          // Checkbox
-          SizedBox(
-            width: 40,
-            child: Checkbox(
-              value: provider.selectedRequests.contains(request.id),
-              onChanged: (bool? value) {
-                provider.toggleRequestSelection(request.id);
-              },
-            ),
-          ),
-          // Expand Icon
-          SizedBox(
-            width: 40,
-            child: IconButton(
-              icon: Icon(
-                isExpanded ? Icons.remove : Icons.add,
-                color: Colors.blue,
-              ),
-              onPressed: () {
-                provider.toggleRowExpansion(request.id);
-              },
-            ),
-          ),
-          Expanded(flex: 2, child: Text(request.personName)),
-          Expanded(flex: 3, child: Text(request.travelPath)),
-          Expanded(flex: 2, child: Text(request.dateTime)),
-          Expanded(
-            flex: 2,
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    request.flightName,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 14),
-                  ),
-                ),
-                if (request.status == "New")
-                  Container(
-                    margin: EdgeInsets.only(left: 8),
-                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.blue,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      'New',
-                      style: TextStyle(color: Colors.white, fontSize: 10),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          Expanded(flex: 1, child: Text(request.flightClass)),
-          Expanded(flex: 1, child: Text(request.status)),
-          Expanded(
-            flex: 2,
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: request.vendorSelected == "Checked"
-                    ? Colors.green[100]
-                    : Colors.orange[100],
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                request.vendorSelected,
-                style: TextStyle(
-                  color: request.vendorSelected == "Checked"
-                      ? Colors.green[800]
-                      : Colors.orange[800],
-                  fontSize: 12,
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Row(
-              children: [
-                Text('${request.vendors.length}'),
-                SizedBox(width: 8),
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.green[100],
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    request.contractStatus,
-                    style: TextStyle(color: Colors.green[800], fontSize: 12),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildVendorSubTable(
-    BuildContext context,
-    BookingProvider provider,
-    BookingRequest request,
-  ) {
-    return Container(
-      margin: EdgeInsets.only(left: 80),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
         children: [
-          // Vendor Details Header
           Container(
             padding: EdgeInsets.all(12),
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'Vendor Details',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: Colors.grey[700],
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(8),
+                topRight: Radius.circular(8),
               ),
             ),
-          ),
-          // Vendor Table Header
-          Container(
-            padding: EdgeInsets.all(12),
-            decoration: BoxDecoration(color: Colors.blue[50]),
             child: Row(
               children: [
+                SizedBox(width: 40), // Expand
                 Expanded(
-                  flex: 1,
                   child: Text(
-                    'S.No',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                    'Vendor Company',
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
                 Expanded(
-                  flex: 3,
-                  child: Text(
-                    'Company Name',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                  ),
-                ),
-                Expanded(
-                  flex: 2,
                   child: Text(
                     'City',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
                 Expanded(
-                  flex: 2,
                   child: Text(
-                    'Category',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                    'Requests',
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
                 Expanded(
-                  flex: 2,
-                  child: Text(
-                    'Email id',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                  ),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    'Contact Number',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                  ),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    'Tickets Issued',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                  ),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    'Price',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                  ),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    'Date Sent',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                  ),
-                ),
-                Expanded(
-                  flex: 1,
-                  child: Text(
-                    'Status',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                  ),
-                ),
-                Expanded(
-                  flex: 1,
                   child: Text(
                     'Actions',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
             ),
           ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: vendorGroups.length,
+              itemBuilder: (context, index) {
+                final vendorGroup = vendorGroups[index];
+                final isExpanded =
+                    provider.expandedVendors[vendorGroup.companyName] ?? false;
 
-          // Vendor Rows
-          ...request.vendors.asMap().entries.map((entry) {
-            int sNo = entry.key + 1;
-            AssignedVendor vendor = entry.value;
-            return Container(
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                border: Border(bottom: BorderSide(color: Colors.grey[300]!)),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: 1,
-                    child: Text('$sNo', style: TextStyle(fontSize: 12)),
-                  ),
-                  Expanded(
-                    flex: 3,
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            vendor.companyName,
-                            style: TextStyle(fontSize: 12),
+                return Column(
+                  children: [
+                    // MAIN VENDOR ROW
+                    Container(
+                      padding: EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(color: Colors.grey[300]!),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: 40,
+                            child: IconButton(
+                              icon: Icon(
+                                isExpanded ? Icons.remove : Icons.add,
+                                color: Colors.blue,
+                              ),
+                              onPressed: () {
+                                print(
+                                  'Vendor expand clicked for ${vendorGroup.companyName}, current state: $isExpanded',
+                                );
+                                provider.toggleVendorExpansion(
+                                  vendorGroup.companyName,
+                                );
+                              },
+                            ),
+                          ),
+                          Expanded(child: Text(vendorGroup.companyName)),
+                          Expanded(child: Text(vendorGroup.vendorDetails.city)),
+                          Expanded(
+                            child: Text(
+                              '${vendorGroup.totalRequests}',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          Expanded(
+                            child: IconButton(
+                              icon: Icon(Icons.edit, color: Colors.blue),
+                              onPressed: () =>
+                                  _openBulkPriceDrawer(context, vendorGroup),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // FAMILY MEMBERS SUB-TABLE (Shows when expanded)
+                    if (isExpanded)
+                      Container(
+                        margin: EdgeInsets.only(left: 40),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[50],
+                          border: Border(
+                            bottom: BorderSide(color: Colors.grey[300]!),
                           ),
                         ),
-                        if (vendor.isAwarded)
-                          Container(
-                            margin: EdgeInsets.only(left: 8),
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.green[100],
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              'Awarded',
-                              style: TextStyle(
-                                color: Colors.green[800],
-                                fontSize: 10,
+                        child: Column(
+                          children: [
+                            Container(
+                              padding: EdgeInsets.all(12),
+                              child: Text(
+                                'Family Members (${vendorGroup.totalRequests} requests)',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: Colors.green[700],
+                                ),
                               ),
                             ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: Text(vendor.city, style: TextStyle(fontSize: 12)),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: Text(
-                      vendor.category,
-                      style: TextStyle(fontSize: 12),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: Text(vendor.emailId, style: TextStyle(fontSize: 12)),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: Text(
-                      vendor.contactNumber,
-                      style: TextStyle(fontSize: 12),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: Text(
-                      vendor.ticketsIssued.isEmpty ? '-' : vendor.ticketsIssued,
-                      style: TextStyle(fontSize: 12),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: Text(
-                      vendor.price.isEmpty ? '-' : vendor.price,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: Text(
-                      vendor.dateSent.isEmpty ? '-' : vendor.dateSent,
-                      style: TextStyle(fontSize: 12),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 1,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.green[100],
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        vendor.status,
-                        style: TextStyle(
-                          color: Colors.green[800],
-                          fontSize: 10,
+                            Container(
+                              padding: EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.green[50],
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      'S.No',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Text(
+                                      'Person Name',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Text(
+                                      'Travel Path',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Text(
+                                      'Flight',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Text(
+                                      'Price',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Text(
+                                      'Status',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (vendorGroup.assignedVendors.isEmpty)
+                              Container(
+                                padding: EdgeInsets.all(20),
+                                child: Text(
+                                  'No family members found for this vendor.',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 12,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              )
+                            else
+                              ...vendorGroup.assignedVendors
+                                  .asMap()
+                                  .entries
+                                  .map((entry) {
+                                    int sNo = entry.key + 1;
+                                    AssignedVendorWithRequest assignedVendor =
+                                        entry.value;
+                                    final request = assignedVendor.request;
+                                    final vendor = assignedVendor.vendor;
+
+                                    return Container(
+                                      padding: EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        border: Border(
+                                          bottom: BorderSide(
+                                            color: Colors.grey[300]!,
+                                          ),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              '$sNo',
+                                              style: TextStyle(fontSize: 12),
+                                            ),
+                                          ),
+                                          Expanded(
+                                            child: Text(
+                                              request.personName,
+                                              style: TextStyle(fontSize: 12),
+                                            ),
+                                          ),
+                                          Expanded(
+                                            child: Text(
+                                              request.travelPath,
+                                              style: TextStyle(fontSize: 12),
+                                            ),
+                                          ),
+                                          Expanded(
+                                            child: Text(
+                                              request.flightName,
+                                              style: TextStyle(fontSize: 12),
+                                            ),
+                                          ),
+                                          Expanded(
+                                            child: Text(
+                                              vendor.price.isEmpty
+                                                  ? '-'
+                                                  : vendor.price,
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                          Expanded(
+                                            child: Container(
+                                              padding: EdgeInsets.symmetric(
+                                                horizontal: 4,
+                                                vertical: 2,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: vendor.isAwarded
+                                                    ? Colors.green[100]
+                                                    : Colors.orange[100],
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
+                                              ),
+                                              child: Text(
+                                                vendor.isAwarded
+                                                    ? 'Awarded'
+                                                    : 'Pending',
+                                                style: TextStyle(
+                                                  fontSize: 10,
+                                                  color: vendor.isAwarded
+                                                      ? Colors.green[800]
+                                                      : Colors.orange[800],
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  })
+                                  .toList(),
+                          ],
                         ),
                       ),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 1,
-                    child: IconButton(
-                      icon: Icon(Icons.edit, size: 16, color: Colors.blue),
-                      onPressed: () {
-                        _openPriceDrawer(context, vendor, request.id);
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
+                  ],
+                );
+              },
+            ),
+          ),
         ],
       ),
     );
@@ -633,17 +770,38 @@ class MainScreen extends StatelessWidget {
   void _assignVendors(BuildContext context, BookingProvider provider) {
     if (provider.selectedRequests.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Please select at least one travel path'),
-          backgroundColor: Colors.orange,
-        ),
+        SnackBar(content: Text('Please select at least one travel path')),
       );
       return;
     }
-
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => VendorSelectionScreen()),
+    );
+  }
+
+  void _openBulkPriceDrawer(BuildContext context, VendorGroup vendorGroup) {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      barrierColor: Colors.black54,
+      transitionDuration: Duration(milliseconds: 300),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return Align(
+          alignment: Alignment.centerRight,
+          child: Material(child: BulkPriceDrawer(vendorGroup: vendorGroup)),
+        );
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: Offset(1.0, 0.0),
+            end: Offset.zero,
+          ).animate(animation),
+          child: child,
+        );
+      },
     );
   }
 
@@ -677,4 +835,23 @@ class MainScreen extends StatelessWidget {
       },
     );
   }
+}
+
+void _showAddPersonDialog(BuildContext context, BookingProvider provider) {
+  showDialog(
+    context: context,
+    builder: (context) => AddPersonDialog(
+      isOneWay: provider.isOneWay,
+      onAddPerson: (name, from, to, flight, cls, date) {
+        provider.addNewPerson(
+          personName: name,
+          fromLocation: from,
+          toLocation: to,
+          flightName: flight,
+          flightClass: cls,
+          dateTime: date,
+        );
+      },
+    ),
+  );
 }

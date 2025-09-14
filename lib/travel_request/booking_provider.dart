@@ -4,13 +4,17 @@ import 'models.dart';
 
 class BookingProvider with ChangeNotifier {
   bool _isOneWay = true;
-  Set<int> _selectedRequests = {};
-  Map<int, bool> _expandedRows = {};
+  final Set<int> _selectedRequests = {};
+  final Map<int, bool> _expandedRows = {};
+  final Map<String, bool> _expandedVendors = {}; // For vendor grouping
   int _nextRequestId = 3; // Start from 3 since we have 2 existing requests
+  int _currentTabIndex = 0; // 0 = Group by Users, 1 = Group by Vendors
 
   bool get isOneWay => _isOneWay;
   Set<int> get selectedRequests => _selectedRequests;
   Map<int, bool> get expandedRows => _expandedRows;
+  Map<String, bool> get expandedVendors => _expandedVendors;
+  int get currentTabIndex => _currentTabIndex;
 
   // Sample data
   final List<BookingRequest> _oneWayRequests = [
@@ -136,6 +140,11 @@ class BookingProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void setTabIndex(int index) {
+    _currentTabIndex = index;
+    notifyListeners();
+  }
+
   void toggleRequestSelection(int requestId) {
     if (_isOneWay) {
       // One way - normal behavior
@@ -166,6 +175,16 @@ class BookingProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void toggleRowExpansion(int requestId) {
+    _expandedRows[requestId] = !(_expandedRows[requestId] ?? false);
+    notifyListeners();
+  }
+
+  void toggleVendorExpansion(String vendorName) {
+    _expandedVendors[vendorName] = !(_expandedVendors[vendorName] ?? false);
+    notifyListeners();
+  }
+
   bool isPersonFullySelected(String personName) {
     if (_isOneWay) return false;
 
@@ -174,6 +193,30 @@ class BookingProvider with ChangeNotifier {
         .toList();
     return personRequests.isNotEmpty &&
         personRequests.every((req) => _selectedRequests.contains(req.id));
+  }
+
+  // Get all unique vendors across all requests
+  List<VendorGroup> getVendorGroups() {
+    Map<String, List<AssignedVendorWithRequest>> vendorMap = {};
+
+    for (var request in currentRequests) {
+      for (var vendor in request.vendors) {
+        final key = vendor.companyName;
+        if (!vendorMap.containsKey(key)) {
+          vendorMap[key] = [];
+        }
+        vendorMap[key]!.add(
+          AssignedVendorWithRequest(vendor: vendor, request: request),
+        );
+      }
+    }
+
+    return vendorMap.entries
+        .map(
+          (entry) =>
+              VendorGroup(companyName: entry.key, assignedVendors: entry.value),
+        )
+        .toList();
   }
 
   void addNewPerson({
@@ -239,29 +282,6 @@ class BookingProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  String _getMonthName(int month) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return months[month - 1];
-  }
-
-  void toggleRowExpansion(int requestId) {
-    _expandedRows[requestId] = !(_expandedRows[requestId] ?? false);
-    notifyListeners();
-  }
-
   void assignVendorsToRequests(Map<int, List<Vendor>> assignedVendors) {
     for (var entry in assignedVendors.entries) {
       final requestId = entry.key;
@@ -301,9 +321,66 @@ class BookingProvider with ChangeNotifier {
     }
   }
 
+  void updateMultipleVendorPrices(
+    String companyName,
+    Map<int, String> prices,
+    bool markAsAwarded,
+  ) {
+    for (var entry in prices.entries) {
+      final requestId = entry.key;
+      final price = entry.value;
+      updateVendorPrice(requestId, companyName, price, markAsAwarded);
+    }
+  }
+
   List<BookingRequest> getSelectedRequestsList() {
     return currentRequests
         .where((request) => _selectedRequests.contains(request.id))
         .toList();
   }
+
+  String _getMonthName(int month) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return months[month - 1];
+  }
+}
+
+// Additional classes for vendor grouping
+class VendorGroup {
+  final String companyName;
+  final List<AssignedVendorWithRequest> assignedVendors;
+
+  VendorGroup({required this.companyName, required this.assignedVendors});
+
+  // Get vendor details (assuming all vendors with same company name have same details)
+  Vendor get vendorDetails => assignedVendors.first.vendor;
+
+  // Get total number of requests for this vendor
+  int get totalRequests => assignedVendors.length;
+
+  // Check if all assignments are awarded
+  bool get allAwarded => assignedVendors.every((av) => av.vendor.isAwarded);
+
+  // Check if any assignment is awarded
+  bool get anyAwarded => assignedVendors.any((av) => av.vendor.isAwarded);
+}
+
+class AssignedVendorWithRequest {
+  final AssignedVendor vendor;
+  final BookingRequest request;
+
+  AssignedVendorWithRequest({required this.vendor, required this.request});
 }
