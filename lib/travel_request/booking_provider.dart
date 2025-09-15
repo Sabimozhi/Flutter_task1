@@ -161,33 +161,33 @@ class BookingProvider with ChangeNotifier {
   }
 
   void toggleRequestSelection(int requestId) {
-    // if (_isOneWay) {
-    //   // One way - normal behavior
-    //   if (_selectedRequests.contains(requestId)) {
-    //     _selectedRequests.remove(requestId);
-    //   } else {
-    //     _selectedRequests.add(requestId);
-    //   }
-    // } else {
-    //   // Round trip - group selection by person
-    //   final request = currentRequests.firstWhere((r) => r.id == requestId);
-    //   final personRequests = currentRequests
-    //       .where((r) => r.personName == request.personName)
-    //       .toList();
+    if (_isOneWay) {
+      // One way - normal behavior
+      if (_selectedRequests.contains(requestId)) {
+        _selectedRequests.remove(requestId);
+      } else {
+        _selectedRequests.add(requestId);
+      }
+    } else {
+      // Round trip - group selection by person
+      final request = currentRequests.firstWhere((r) => r.id == requestId);
+      final personRequests = currentRequests
+          .where((r) => r.personName == request.personName)
+          .toList();
 
-    //   if (_selectedRequests.contains(requestId)) {
-    //     // If any request for this person is selected, unselect all
-    //     for (var req in personRequests) {
-    //       _selectedRequests.remove(req.id);
-    //     }
-    //   } else {
-    //     // If none selected for this person, select all
-    //     for (var req in personRequests) {
-    //       _selectedRequests.add(req.id);
-    //     }
-    //   }
-    // }
-    // notifyListeners();
+      if (_selectedRequests.contains(requestId)) {
+        // If any request for this person is selected, unselect all
+        for (var req in personRequests) {
+          _selectedRequests.remove(req.id);
+        }
+      } else {
+        // If none selected for this person, select all
+        for (var req in personRequests) {
+          _selectedRequests.add(req.id);
+        }
+      }
+    }
+    notifyListeners();
   }
 
   void toggleRowExpansion(int requestId) {
