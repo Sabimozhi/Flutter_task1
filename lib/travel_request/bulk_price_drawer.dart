@@ -45,23 +45,39 @@ class _BulkPriceDrawerState extends State<BulkPriceDrawer> {
 
       // Find other trip request for round trips
       if (!provider.isOneWay) {
-        _otherTripRequests[requestId] = provider.currentRequests.firstWhere(
-          (r) =>
-              r.personName == assignedVendor.request.personName &&
-              r.id != requestId,
-          orElse: () => null as BookingRequest,
-        );
-
-        // Prefill other trip price if exists
-        final otherTrip = _otherTripRequests[requestId];
-        if (otherTrip != null) {
-          final otherTripVendor = otherTrip.vendors.firstWhere(
-            (v) => v.companyName == widget.vendorGroup.companyName,
-            orElse: () => null as AssignedVendor,
+        try {
+          _otherTripRequests[requestId] = provider.currentRequests.firstWhere(
+            (r) =>
+                r.personName == assignedVendor.request.personName &&
+                r.id != requestId,
           );
-          if (otherTripVendor != null) {
-            _otherTripControllers[requestId]!.text = otherTripVendor.price;
+
+          // Prefill other trip price if exists
+          final otherTrip = _otherTripRequests[requestId];
+          if (otherTrip != null) {
+            final otherTripVendor = otherTrip.vendors.firstWhere(
+              (v) => v.companyName == widget.vendorGroup.companyName,
+              orElse: () => AssignedVendor(
+                companyName: '',
+                contactPerson: '',
+                city: '',
+                category: '',
+                contactNumber: '',
+                ticketsIssued: '',
+                status: '',
+                emailId: '',
+                dateSent: '',
+                price: '',
+                isAwarded: false,
+                requestId: 0,
+              ),
+            );
+            if (otherTripVendor.companyName.isNotEmpty) {
+              _otherTripControllers[requestId]!.text = otherTripVendor.price;
+            }
           }
+        } catch (e) {
+          _otherTripRequests[requestId] = null;
         }
       }
     }
@@ -78,6 +94,46 @@ class _BulkPriceDrawerState extends State<BulkPriceDrawer> {
     super.dispose();
   }
 
+  // Method to count blocked paths (already awarded to other vendors)
+  int _getBlockedPathsCount() {
+    int count = 0;
+    for (var assignedVendor in widget.vendorGroup.assignedVendors) {
+      if (_isRequestAlreadyAwarded(assignedVendor.request)) {
+        count++;
+      }
+
+      // Also check other trip if checkbox is selected
+      final requestId = assignedVendor.request.id;
+      if (_includeOtherTripForRequest[requestId] == true &&
+          _otherTripRequests[requestId] != null) {
+        if (_isRequestAlreadyAwarded(_otherTripRequests[requestId]!)) {
+          count++;
+        }
+      }
+    }
+    return count;
+  }
+
+  // Method to count available paths (not awarded to other vendors)
+  int _getAvailablePathsCount() {
+    int count = 0;
+    for (var assignedVendor in widget.vendorGroup.assignedVendors) {
+      if (!_isRequestAlreadyAwarded(assignedVendor.request)) {
+        count++;
+      }
+
+      // Also check other trip if checkbox is selected
+      final requestId = assignedVendor.request.id;
+      if (_includeOtherTripForRequest[requestId] == true &&
+          _otherTripRequests[requestId] != null) {
+        if (!_isRequestAlreadyAwarded(_otherTripRequests[requestId]!)) {
+          count++;
+        }
+      }
+    }
+    return count;
+  }
+
   void _submitPrices(bool markAsAwarded) {
     final provider = Provider.of<BookingProvider>(context, listen: false);
     Map<int, String> prices = {};
@@ -86,6 +142,12 @@ class _BulkPriceDrawerState extends State<BulkPriceDrawer> {
     // Validate and collect prices
     for (var assignedVendor in widget.vendorGroup.assignedVendors) {
       final requestId = assignedVendor.request.id;
+
+      // Skip if already awarded to another vendor
+      if (_isRequestAlreadyAwarded(assignedVendor.request)) {
+        continue;
+      }
+
       final price = _priceControllers[requestId]!.text.trim();
 
       if (price.isEmpty) {
@@ -105,6 +167,13 @@ class _BulkPriceDrawerState extends State<BulkPriceDrawer> {
       // Check other trip pricing
       if (_includeOtherTripForRequest[requestId] == true &&
           _otherTripRequests[requestId] != null) {
+        final otherTrip = _otherTripRequests[requestId]!;
+
+        // Skip if other trip is already awarded to another vendor
+        if (_isRequestAlreadyAwarded(otherTrip)) {
+          continue;
+        }
+
         final otherPrice = _otherTripControllers[requestId]!.text.trim();
         if (otherPrice.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -117,8 +186,21 @@ class _BulkPriceDrawerState extends State<BulkPriceDrawer> {
           );
           return;
         }
-        otherTripPrices[_otherTripRequests[requestId]!.id] = otherPrice;
+        otherTripPrices[otherTrip.id] = otherPrice;
       }
+    }
+
+    // Check if we have any valid prices to submit
+    if (prices.isEmpty && otherTripPrices.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'No available paths to update. All paths are already awarded to other vendors.',
+          ),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
     }
 
     // Update all prices
@@ -139,12 +221,13 @@ class _BulkPriceDrawerState extends State<BulkPriceDrawer> {
 
     Navigator.of(context).pop();
 
+    final totalUpdated = prices.length + otherTripPrices.length;
     String message = markAsAwarded
-        ? 'All prices updated and vendor marked as awarded!'
-        : 'All prices updated successfully!';
+        ? '$totalUpdated prices updated and vendor marked as awarded!'
+        : '$totalUpdated prices updated successfully!';
 
     if (otherTripPrices.isNotEmpty) {
-      message += ' (Including other trips)';
+      message += ' (Including return trips)';
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -255,22 +338,30 @@ class _BulkPriceDrawerState extends State<BulkPriceDrawer> {
                 final hasOtherTrip = _otherTripRequests[requestId] != null;
                 final includeOtherTrip =
                     _includeOtherTripForRequest[requestId] ?? false;
+                final isAlreadyAwarded = _isRequestAlreadyAwarded(request);
 
                 return Container(
                   margin: EdgeInsets.only(bottom: 20),
                   padding: EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: isAlreadyAwarded ? Colors.grey[100] : Colors.white,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.blue[200]!, width: 2),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.1),
-                        spreadRadius: 1,
-                        blurRadius: 3,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
+                    border: Border.all(
+                      color: isAlreadyAwarded
+                          ? Colors.grey[400]!
+                          : Colors.blue[200]!,
+                      width: 2,
+                    ),
+                    boxShadow: isAlreadyAwarded
+                        ? []
+                        : [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.1),
+                              spreadRadius: 1,
+                              blurRadius: 3,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -287,7 +378,9 @@ class _BulkPriceDrawerState extends State<BulkPriceDrawer> {
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16,
-                                    color: Colors.blue[700],
+                                    color: isAlreadyAwarded
+                                        ? Colors.grey[600]
+                                        : Colors.blue[700],
                                   ),
                                 ),
                                 SizedBox(height: 4),
@@ -295,14 +388,18 @@ class _BulkPriceDrawerState extends State<BulkPriceDrawer> {
                                   request.travelPath,
                                   style: TextStyle(
                                     fontSize: 14,
-                                    color: Colors.grey[600],
+                                    color: isAlreadyAwarded
+                                        ? Colors.grey[500]
+                                        : Colors.grey[600],
                                   ),
                                 ),
                                 Text(
                                   '${request.dateTime.split('\n')[0]} • ${request.flightName}',
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: Colors.grey[500],
+                                    color: isAlreadyAwarded
+                                        ? Colors.grey[400]
+                                        : Colors.grey[500],
                                   ),
                                 ),
                               ],
@@ -326,95 +423,146 @@ class _BulkPriceDrawerState extends State<BulkPriceDrawer> {
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
+                            )
+                          else if (isAlreadyAwarded)
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.red[100],
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                'Awarded to Another Vendor',
+                                style: TextStyle(
+                                  color: Colors.red[800],
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
                         ],
                       ),
                       SizedBox(height: 16),
 
-                      // Round trip checkbox
-                      if (isRoundTrip && hasOtherTrip)
+                      // Disable inputs if already awarded to another vendor
+                      if (isAlreadyAwarded)
                         Container(
                           padding: EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.amber[50],
+                            color: Colors.red[50],
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.amber[200]!),
+                            border: Border.all(color: Colors.red[200]!),
                           ),
                           child: Row(
                             children: [
-                              Checkbox(
-                                value: includeOtherTrip,
-                                onChanged: (bool? value) {
-                                  setState(() {
-                                    _includeOtherTripForRequest[requestId] =
-                                        value ?? false;
-                                  });
-                                },
+                              Icon(
+                                Icons.block,
+                                color: Colors.red[800],
+                                size: 20,
                               ),
+                              SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  'Include price for return trip',
+                                  'This travel path has already been awarded to another vendor. No further actions can be taken.',
                                   style: TextStyle(
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.amber[800],
+                                    color: Colors.red[800],
                                     fontSize: 14,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                      if (isRoundTrip && hasOtherTrip) SizedBox(height: 12),
-
-                      // Other trip price (if return trip and checkbox is checked)
-                      if (includeOtherTrip &&
-                          hasOtherTrip &&
-                          _isReturnTrip(
-                            request,
-                            _otherTripRequests[requestId]!,
-                          ))
-                        Column(
-                          children: [
-                            _buildOtherTripPriceSection(
-                              requestId,
-                              _otherTripRequests[requestId]!,
+                        )
+                      else ...[
+                        // Round trip checkbox
+                        if (isRoundTrip && hasOtherTrip)
+                          Container(
+                            padding: EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.amber[50],
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.amber[200]!),
                             ),
-                            SizedBox(height: 12),
-                          ],
-                        ),
-
-                      // Main trip price input
-                      TextField(
-                        controller: _priceControllers[requestId]!,
-                        decoration: InputDecoration(
-                          labelText: 'Price for this trip',
-                          hintText: 'Enter price (e.g., ₹ 50000)',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
+                            child: Row(
+                              children: [
+                                Checkbox(
+                                  value: includeOtherTrip,
+                                  onChanged: (bool? value) {
+                                    setState(() {
+                                      _includeOtherTripForRequest[requestId] =
+                                          value ?? false;
+                                    });
+                                  },
+                                ),
+                                Expanded(
+                                  child: Text(
+                                    'Include price for return trip',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.amber[800],
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                          prefixIcon: Icon(Icons.currency_rupee),
-                          filled: true,
-                          fillColor: Colors.grey[50],
-                        ),
-                        keyboardType: TextInputType.number,
-                      ),
+                        if (isRoundTrip && hasOtherTrip) SizedBox(height: 12),
 
-                      // Other trip price (if outbound trip and checkbox is checked)
-                      if (includeOtherTrip &&
-                          hasOtherTrip &&
-                          !_isReturnTrip(
-                            request,
-                            _otherTripRequests[requestId]!,
-                          ))
-                        Column(
-                          children: [
-                            SizedBox(height: 12),
-                            _buildOtherTripPriceSection(
-                              requestId,
+                        // Other trip price (if return trip and checkbox is checked)
+                        if (includeOtherTrip &&
+                            hasOtherTrip &&
+                            _isReturnTrip(
+                              request,
                               _otherTripRequests[requestId]!,
+                            ))
+                          Column(
+                            children: [
+                              _buildOtherTripPriceSection(
+                                requestId,
+                                _otherTripRequests[requestId]!,
+                              ),
+                              SizedBox(height: 12),
+                            ],
+                          ),
+
+                        // Main trip price input
+                        TextField(
+                          controller: _priceControllers[requestId]!,
+                          decoration: InputDecoration(
+                            labelText: 'Price for this trip',
+                            hintText: 'Enter price (e.g., ₹ 50000)',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                          ],
+                            prefixIcon: Icon(Icons.currency_rupee),
+                            filled: true,
+                            fillColor: Colors.grey[50],
+                          ),
+                          keyboardType: TextInputType.number,
                         ),
+
+                        // Other trip price (if outbound trip and checkbox is checked)
+                        if (includeOtherTrip &&
+                            hasOtherTrip &&
+                            !_isReturnTrip(
+                              request,
+                              _otherTripRequests[requestId]!,
+                            ))
+                          Column(
+                            children: [
+                              SizedBox(height: 12),
+                              _buildOtherTripPriceSection(
+                                requestId,
+                                _otherTripRequests[requestId]!,
+                              ),
+                            ],
+                          ),
+                      ],
                     ],
                   ),
                 );
@@ -447,6 +595,8 @@ class _BulkPriceDrawerState extends State<BulkPriceDrawer> {
                     ),
                   ),
                   SizedBox(height: 12),
+
+                  // Always show the award button, but with different styling based on availability
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -459,15 +609,52 @@ class _BulkPriceDrawerState extends State<BulkPriceDrawer> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: Text(
-                        'Submit All & Mark as Awarded',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      child: Column(
+                        children: [
+                          Text(
+                            'Submit All & Mark as Awarded',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          if (_getBlockedPathsCount() > 0)
+                            Padding(
+                              padding: EdgeInsets.only(top: 4),
+                              child: Text(
+                                '${_getAvailablePathsCount()} available, ${_getBlockedPathsCount()} blocked',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   ),
+
+                  // Info text about blocked paths
+                  if (_getBlockedPathsCount() > 0)
+                    Padding(
+                      padding: EdgeInsets.only(top: 8),
+                      child: Container(
+                        padding: EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.orange[50],
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: Colors.orange[200]!),
+                        ),
+                        child: Text(
+                          'Note: ${_getBlockedPathsCount()} travel paths are already awarded to other vendors and will be skipped. ${_getAvailablePathsCount()} paths are available for awarding.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.orange[800],
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ],
@@ -526,6 +713,15 @@ class _BulkPriceDrawerState extends State<BulkPriceDrawer> {
     }
 
     return false;
+  }
+
+  bool _isRequestAlreadyAwarded(BookingRequest request) {
+    // Check if any other vendor is already awarded for this request
+    return request.vendors.any(
+      (vendor) =>
+          vendor.companyName != widget.vendorGroup.companyName &&
+          vendor.isAwarded,
+    );
   }
 
   Widget _buildInfoRow(String label, String value) {

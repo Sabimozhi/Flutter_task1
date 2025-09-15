@@ -307,27 +307,71 @@ class _PriceDrawerState extends State<PriceDrawer> {
                     ),
                   ),
                   SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => _submitPrice(true),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                        padding: EdgeInsets.symmetric(vertical: 15),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
+
+                  // Mark as Awarded button - disabled if already awarded elsewhere
+                  if (!_canMarkAsAwarded())
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.symmetric(vertical: 15),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Text(
-                        'Submit & Mark as Awarded',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                      child: Column(
+                        children: [
+                          Text(
+                            'Submit & Mark as Awarded',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.red[100],
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              widget.vendor.isAwarded
+                                  ? 'Already Awarded'
+                                  : 'Trip Already Awarded to Another Vendor',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.red[800],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () => _submitPrice(true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(vertical: 15),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: Text(
+                          'Submit & Mark as Awarded',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
-                  ),
                 ],
               ),
             ],
@@ -407,6 +451,34 @@ class _PriceDrawerState extends State<PriceDrawer> {
     }
 
     return false;
+  }
+
+  bool _isRequestAlreadyAwarded() {
+    final provider = Provider.of<BookingProvider>(context, listen: false);
+    final currentRequest = provider.currentRequests.firstWhere(
+      (r) => r.id == widget.requestId,
+    );
+
+    // Check if any other vendor is already awarded for this request
+    return currentRequest.vendors.any(
+      (vendor) =>
+          vendor.companyName != widget.vendor.companyName && vendor.isAwarded,
+    );
+  }
+
+  bool _isOtherTripAlreadyAwarded() {
+    if (_otherTripRequest == null) return false;
+
+    // Check if any vendor is already awarded for the other trip
+    return _otherTripRequest!.vendors.any(
+      (vendor) =>
+          vendor.companyName != widget.vendor.companyName && vendor.isAwarded,
+    );
+  }
+
+  bool _canMarkAsAwarded() {
+    // Can mark as awarded if this vendor is not already awarded and no other vendor is awarded
+    return !widget.vendor.isAwarded && !_isRequestAlreadyAwarded();
   }
 
   Widget _buildInfoRow(String label, String value) {

@@ -74,7 +74,7 @@ class BookingProvider with ChangeNotifier {
   // All available vendors
   final List<Vendor> _allVendors = [
     Vendor(
-      companyName: "Test Vendor Edited",
+      companyName: "Test Vendor 1",
       contactPerson: "-",
       city: "Aabenraa",
       category: "Travel Agency",
@@ -85,7 +85,7 @@ class BookingProvider with ChangeNotifier {
       dateSent: "",
     ),
     Vendor(
-      companyName: "Test Vendor Edited",
+      companyName: "Test Vendor 2",
       contactPerson: "-",
       city: "Aabenraa",
       category: "Travel Agency",
@@ -96,7 +96,7 @@ class BookingProvider with ChangeNotifier {
       dateSent: "",
     ),
     Vendor(
-      companyName: "Test Vendor Edited",
+      companyName: "Test Vendor 3",
       contactPerson: "-",
       city: "Aabenraa",
       category: "Travel Agency",

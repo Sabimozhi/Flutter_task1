@@ -1,0 +1,118 @@
+PROMPT 1
+
+Create a flutter web application for the ticket booking application in which
+
+Keep a toggle on top with 2 options -> One way, round trip, 
+
+A main table should list down all the requests
+In case of one way toggle selected, the table should have one entry
+1. Person A Name, Travel Path (Chennai to Delhi), dateTime, Flight name, Vendor selected, Contract Status
+In case of one way toggle selected, the table should have to and forth entry
+1. Person A Name, Travel Path (Chennai to Delhi), dateTime, Flight name, Vendor selected, Contract Status
+2. Person A Name, Travel Path (Delhi to Chennai), dateTime, Flight name, Vendor selected, Contract Status
+
+Keep a subtable
+The entries of main table will have a + icon and when tapped on it, a subtable opens up with the list of vendors selected
+
+It should have
+1. Vendor A Name, Contact Number, Total Tickets issued , price, options button
+2. Vendor B Name, Contact Number, Total Tickets issued , price, options button 
+
+Refer screenshot if more info required
+
+PROMPT 2
+Include a Select & Assign Vendor button in the top right corner of the screen
+The vendor page will have list of vendors with the following information (Load with 5 dummy data)
+Ref Screenshot for vendor list UI
+
+The main table will have a check box before each travel path entry, which can be selected or unselected 
+
+If a travel path is selected and  Select & Assign Vendor button is clicked, 
+The vendor list page will have the selected travel path followed by the list of all vendors with a check box
+I can select the vendors and Submit
+page navigates back, the sub table of the travel path will list the selected vendors,
+
+PROMPT 3
+Give me as individual widgets (for each page) rather than a single file
+use provider package if required
+Also keep the models in a different file
+Also make sure the following flow exists
+
+after user selects vendors for each travel request, By default the vendors will not be marked as awarded
+
+Before awarding, the vendor list sub table will have an edit icon button as the last column and when tapped on it, A drawer opens up, in which user will input the price offered by vendor for that trip, I will fill in the price
+The drawer will have 2 options,
+Submit, which assigns the price of vendor to that particular travel request the price and close the drawer
+Submit & Mark as awareded , which assigns the price of vendor to that particular travel request, mark the vendor as awarded for that request and then  close the drawer
+
+And then only the vendor sub -list will show the tag "Awareded"
+
+PROMPT 4
+In case of round trip,
+Same person will have 2 requests
+And same vendors will be selected for both requests
+
+In that case, Let's make it in this way
+
+If page is in two way toggle, 
+one person will have 2 requests, If one check box is checked, both gets checked, and if unckecked both gets unchecked, 
+In this way, we can reduce the clicks required
+
+Also include a floating action button to add more people
+Open a popup, show list of input fields required (prefill with dynamic random dummy data everytime) 
+IF currently one way toggle is selected, then one entry should be added
+If two way toggle is selected, then 2 entries has to be added, one for pont a to b and the other one for point b to a
+
+PROMPT 5
+in the price drawer, we have the input field for price offered by vendor 
+It has 2 scnearios
+
+In case of one way trip, the vendor will give price for only one trip, but in case of round trip, the vendor can provide the quotation for individual trip or 2 trips combined
+If he gives quotation for 2 trips combined, then we'll have to repeat the process (input price and mark as awarded) twice 
+If current toggle is 2 way, then let's introduct a check box saying, include price for other trip
+When checked, 
+display the input field for price offered by vendor for the other trip
+
+Round trip for A->B
+If drawer is opened from A and if check box is selected, then show another input field in the bottom for B->A
+
+If drawer is opened from B and if check box is selected, then show another input field in the above for A->B
+
+Let us put a mild border surrouding the input field so that user will understand what happens when checkbox is checked and unchecked.
+
+PROMPT6
+Everything is working as expected now
+Now let's handle another scenario
+
+When I have more family members who's whole joruney is going to be awarded to a single vendor
+I'll have to expand individual members, open the vendor drawer, input price and mark as awarded
+
+In order to handle this effectively
+Let's introduce a tab over main table
+Group by users, Group by vendors
+
+Let current setup have the current setup, 
+The Group by vendors will have list of all vendors selected throughout the travel request for all family members
+
+When individual vendor row is expanded, 
+It should display all members selected for that vendor
+When the price drawer opens up
+It should list down all the users selected the vendor and I shall included the prices for all of them in a single drawer
+The checkbox behaviour in case of a round trip should also be included there.
+
+PROMPT 7
+At any time, one travel path shall have only one vendor only.
+
+If a vendor is marked as awarded for a particular travel path, then the Mark as awareded button should be disabled in the Group by users's Vendor drawer
+
+in case of the Group by vendor's view's drawer, the marked as awareded container should be disabled if the travel path has already been awareded. Just put a tag and restrict any further inputs.
+
+PROMPT 8
+Currently, the application restricts Submit All & Mark as Awarded even if some other trips are already awarded to other vendor
+But the flow should work in the following manner
+
+Restrict the particular travel path which has been already awarded, But the other travel paths within shall have different vendors and hence restriction should work in the way based on travel path, not the entire request (FYI, the whole table in one toggle is one request, Round trip is another request)
+
+PROMPT 9 (THE LATEST PROMPT FROM WHERE I WANT TO CONTINUE)
+
+The method '_getBlockedPathsCount' isn't defined for the type '_BulkPriceDrawerState'.Try correcting the name to the name of an existing method, or defining a method named '_getBlockedPathsCount'.
